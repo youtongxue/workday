@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,12 +9,14 @@ import 'package:workday/utils/statebar_util.dart';
 
 import '../../components/container/custom_icon_button.dart';
 import '../../utils/assert_util.dart';
+import '../../utils/date_util.dart';
 import '../../utils/page_path_util.dart';
 
 List<String> weekStrList = ["一", "二", "三", "四", "五", "六", "日"];
 
 /// 顶部时间、星期
 Widget dateTitleBar(BuildContext context) {
+  final controller = Get.find<CalendarPageViewModel>();
   return Container(
     width: context.width,
     height: 116,
@@ -29,9 +32,11 @@ Widget dateTitleBar(BuildContext context) {
             child: Row(
               children: [
                 const SizedBox(width: 16),
-                const Text(
-                  "2024年2月",
-                  style: TextStyle(fontSize: 18),
+                Obx(
+                  () => Text(
+                    "2024年${controller.currentMonth}月",
+                    style: const TextStyle(fontSize: 18),
+                  ),
                 ),
                 const Expanded(child: SizedBox()),
                 CustomIconButton(
@@ -61,11 +66,32 @@ Widget dateTitleBar(BuildContext context) {
   );
 }
 
+String buildDateDay(
+    int monthFirstDayIsWeek, int monthLastDay, int column, int row) {
+  var dayText = "";
+  final itemIndex = ((column - 1) * 7 + row + 1);
+  final result = itemIndex - monthFirstDayIsWeek;
+  if (result >= 0) {
+    final dayResult = (result + 1).toString();
+    if (int.parse(dayResult) <= monthLastDay) {
+      dayText = dayResult;
+    } else {
+      dayText = "";
+    }
+  }
+  return dayText;
+}
+
 /// 日历详情
-Widget calenderInfo(BuildContext context) {
+Widget calenderInfo(BuildContext context, int month) {
   const monthInfoRow = 1; // 月信息，占一行
   const monthMaxRow = 6; // 每月最大显示行
   const weekDay = 7; // 每周天数（列）
+  // 月份第一个月星期几
+  final firstDayOfWeek = DateUtil.firstDayOfWeek(2024, month) == 0
+      ? 7
+      : DateUtil.firstDayOfWeek(2024, month);
+  const monthLastDay = 31; // 月份最后一天
   return SizedBox(
     child: Column(
       children: List.generate(monthMaxRow + monthInfoRow, (column) {
@@ -77,8 +103,9 @@ Widget calenderInfo(BuildContext context) {
               decoration:
                   BoxDecoration(color: Colors.white, border: Border.all()),
               child: Center(
-                child: Text(
-                    column == 0 ? "2月" : ((column - 1) * 7 + row).toString()),
+                child: Text(column == 0
+                    ? "2月"
+                    : buildDateDay(firstDayOfWeek, monthLastDay, column, row)),
               ),
             ));
           }),
@@ -144,7 +171,10 @@ class CalendarPage extends GetView<CalendarPageViewModel> {
                   itemCount: 12,
                   scrollDirection: Axis.vertical,
                   itemBuilder: (context, index) {
-                    return calenderInfo(context);
+                    return calenderInfo(context, index + 1);
+                  },
+                  onPageChanged: (value) {
+                    controller.changeCurrentMonth(value);
                   },
                 ),
               ),
