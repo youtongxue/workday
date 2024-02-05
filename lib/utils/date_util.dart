@@ -42,7 +42,7 @@ class DateUtil {
   /// 返回值是一个整数，0 表示星期日，1 表示星期一，依此类推，直到 6 表示星期六
   static int firstDayOfWeek(int year, int month) {
     DateTime firstDayOfMonth = DateTime(year, month, 1);
-    return firstDayOfMonth.weekday;
+    return firstDayOfMonth.weekday == 7 ? 0 : firstDayOfMonth.weekday;
   }
 
   /// 返回指定年月的天数
@@ -55,9 +55,34 @@ class DateUtil {
         (month < 12) ? DateTime(year, month + 1, 1) : DateTime(year + 1, 1, 1);
 
     // 下一个月的第一天减去一天，得到当前月的最后一天
-    DateTime lastDayOfMonth = firstDayOfNextMonth.subtract(Duration(days: 1));
+    DateTime lastDayOfMonth =
+        firstDayOfNextMonth.subtract(const Duration(days: 1));
 
     // 返回当前月的天数
     return lastDayOfMonth.day;
+  }
+
+  /// 计算某个月按照【日、一、二、三、四、五、六】显示，需要显示多少行
+  static int calculateRowsForMonth(int year, int month) {
+    // 获取该月的第一天
+    DateTime firstDayOfMonth = DateTime(year, month, 1);
+    // 获取该月的最后一天（下个月的第一天的前一天）
+    DateTime lastDayOfMonth = DateTime(year, month + 1, 0);
+
+    // 计算该月的第一天是星期几（0代表星期日，1代表星期一，...，6代表星期六）
+    int weekdayOfFirstDay = firstDayOfMonth.weekday % 7;
+
+    // 计算该月的天数
+    int daysInMonth = lastDayOfMonth.day;
+
+    // 计算需要的行数
+    // 第一行包含第一天和它之前的几天（如果第一天不是星期日）
+    // 剩余的天数除以7得到完整的星期数
+    // 如果还有剩余的天数，则需要额外一行
+    int fullWeeks = (daysInMonth + weekdayOfFirstDay) ~/ 7;
+    int remainingDays = (daysInMonth + weekdayOfFirstDay) % 7;
+    int rows = fullWeeks + (remainingDays > 0 ? 1 : 0);
+
+    return rows;
   }
 }

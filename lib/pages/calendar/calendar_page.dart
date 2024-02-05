@@ -12,7 +12,7 @@ import '../../utils/assert_util.dart';
 import '../../utils/date_util.dart';
 import '../../utils/page_path_util.dart';
 
-List<String> weekStrList = ["一", "二", "三", "四", "五", "六", "日"];
+List<String> weekStrList = ["日", "一", "二", "三", "四", "五", "六"];
 
 /// 顶部时间、星期
 Widget dateTitleBar(BuildContext context) {
@@ -67,13 +67,17 @@ Widget dateTitleBar(BuildContext context) {
 }
 
 String buildDateDay(
-    int monthFirstDayIsWeek, int monthLastDay, int column, int row) {
+    int monthFirstDayIsWeek, int monthDay, int column, int row) {
   var dayText = "";
-  final itemIndex = ((column - 1) * 7 + row + 1);
+  final itemIndex = (column * 7 + row + 1);
   final result = itemIndex - monthFirstDayIsWeek;
-  if (result >= 0) {
-    final dayResult = (result + 1).toString();
-    if (int.parse(dayResult) <= monthLastDay) {
+
+  debugPrint(
+      "monthFirstDayIsWeek: > > > $monthFirstDayIsWeek > > > itemIndex: > > > $itemIndex > > > result: > > > $result");
+
+  if (result > 0) {
+    final dayResult = result.toString();
+    if (int.parse(dayResult) <= monthDay) {
       dayText = dayResult;
     } else {
       dayText = "";
@@ -84,28 +88,27 @@ String buildDateDay(
 
 /// 日历详情
 Widget calenderInfo(BuildContext context, int month) {
-  const monthInfoRow = 1; // 月信息，占一行
   const monthMaxRow = 6; // 每月最大显示行
   const weekDay = 7; // 每周天数（列）
   // 月份第一个月星期几
-  final firstDayOfWeek = DateUtil.firstDayOfWeek(2024, month) == 0
-      ? 7
-      : DateUtil.firstDayOfWeek(2024, month);
-  const monthLastDay = 31; // 月份最后一天
+  final firstDayOfWeek = DateUtil.firstDayOfWeek(2024, month);
+  final monthDay = DateUtil.getDaysInMonth(2024, month);
+
+  final row = DateUtil.calculateRowsForMonth(2024, month);
+  debugPrint("month: $month  行: $row");
   return SizedBox(
     child: Column(
-      children: List.generate(monthMaxRow + monthInfoRow, (column) {
+      children: List.generate(row, (column) {
         return Row(
           children: List.generate(weekDay, (row) {
             return Expanded(
                 child: Container(
-              height: ((context.height / 2) - 116) / 6,
+              height: ((context.height / 2) - 116) / monthMaxRow,
               decoration:
                   BoxDecoration(color: Colors.white, border: Border.all()),
               child: Center(
-                child: Text(column == 0
-                    ? "2月"
-                    : buildDateDay(firstDayOfWeek, monthLastDay, column, row)),
+                child:
+                    Text(buildDateDay(firstDayOfWeek, monthDay, column, row)),
               ),
             ));
           }),
@@ -118,10 +121,7 @@ Widget calenderInfo(BuildContext context, int month) {
 /// 底部打卡信息部分
 Widget workDayInfo(BuildContext context) {
   return Container(
-    width: context.width,
-    height: context.height / 2,
     padding: const EdgeInsets.symmetric(horizontal: 16),
-    color: MyColors.background.color,
     child: Column(
       children: [
         const SizedBox(height: 16),
@@ -129,11 +129,15 @@ Widget workDayInfo(BuildContext context) {
           width: context.width,
           height: 80,
           decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(10)),
+              color: MyColors.coloBlue.color,
+              borderRadius: BorderRadius.circular(12)),
           child: const Row(
             children: [
               SizedBox(width: 12),
-              Text("出勤 : "),
+              Text(
+                "出勤 : ",
+                style: TextStyle(color: Colors.white),
+              ),
             ],
           ),
         )
@@ -153,23 +157,22 @@ class CalendarPage extends GetView<CalendarPageViewModel> {
 
     return Scaffold(
       backgroundColor: MyColors.background.color,
-      body: Container(
+      body: SizedBox(
         width: context.width,
         height: context.height,
-        color: Colors.amber,
         child: Stack(
           children: [
             // 日历详情信息
             Positioned(
               left: 0,
               right: 0,
-              top: 116 - (((context.height / 2) - 116) / 6),
+              top: 116,
               child: SizedBox(
                 width: context.width,
                 height: (((context.height / 2) - 116) / 6) * 7,
                 child: PageView.builder(
                   itemCount: 12,
-                  scrollDirection: Axis.vertical,
+                  //scrollDirection: Axis.vertical,
                   itemBuilder: (context, index) {
                     return calenderInfo(context, index + 1);
                   },
@@ -185,11 +188,51 @@ class CalendarPage extends GetView<CalendarPageViewModel> {
               alignment: Alignment.topCenter,
               child: dateTitleBar(context),
             ),
+
             // 底部考勤
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: workDayInfo(context),
-            )
+            // Align(
+            //   alignment: Alignment.bottomCenter,
+            //   child: Obx(() => Transform.translate(
+            //         offset: Offset(0, controller.offset.value),
+            //         child: workDayInfo(context),
+            //       )),
+            // ),
+
+            // 底部考勤
+            DraggableScrollableSheet(
+              initialChildSize: 0.5, // 初始时，底部面板占据整个屏幕高度的比例
+              minChildSize:
+                  (context.height - 116 - (((context.height / 2) - 116))) /
+                      context.height, // 底部面板可以拖拽到的最小高度比例
+              maxChildSize:
+                  (context.height - 116 - (((context.height / 2) - 116) / 6)) /
+                      context.height, // 底部面板可以拖拽到的最大高度比例
+              builder:
+                  (BuildContext context, ScrollController scrollController) {
+                return Container(
+                  clipBehavior: Clip.hardEdge,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(0),
+                      topRight: Radius.circular(0),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        spreadRadius: 10,
+                        blurRadius: 20,
+                      ),
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    physics: const PageScrollPhysics(),
+                    child: workDayInfo(context), // 你的考勤信息widget
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
