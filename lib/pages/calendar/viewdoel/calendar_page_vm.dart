@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
-import '../../utils/date_util.dart';
+import '../../../utils/date_util.dart';
 
 class CalendarPageViewModel extends GetxController {
   var currentYear = 2024.obs;
@@ -34,5 +34,24 @@ class CalendarPageViewModel extends GetxController {
     }
 
     debugPrint("绘制行: ${currentRowsMonth.value}");
+  }
+
+  String dayText(int monthFirstDayIsWeek, int monthDay, int column, int row) {
+    var dayText = "";
+    final itemIndex = (column * 7 + row + 1);
+    final result = itemIndex - monthFirstDayIsWeek;
+
+    debugPrint(
+        "monthFirstDayIsWeek: > > > $monthFirstDayIsWeek > > > itemIndex: > > > $itemIndex > > > result: > > > $result");
+
+    if (result > 0) {
+      final dayResult = result.toString();
+      if (int.parse(dayResult) <= monthDay) {
+        dayText = dayResult;
+      } else {
+        dayText = "";
+      }
+    }
+    return dayText;
   }
 }

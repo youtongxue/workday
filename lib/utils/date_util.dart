@@ -85,4 +85,25 @@ class DateUtil {
 
     return rows;
   }
+
+  /// 某月分的某天信息
+  static List<DateTime> dayInfoInMonth(int year, int month) {
+    List<DateTime> daysInMonth = [];
+    // 获取该月的第一天
+    DateTime firstDayOfMonth = DateTime(year, month, 1);
+    // 获取下一个月的第一天
+    DateTime firstDayOfNextMonth =
+        (month < 12) ? DateTime(year, month + 1, 1) : DateTime(year + 1, 1, 1);
+    // 当前遍历的日期
+    DateTime currentDay = firstDayOfMonth;
+    // 遍历该月的每一天
+    while (currentDay.isBefore(firstDayOfNextMonth)) {
+      // 将当前日期添加到列表中
+      daysInMonth.add(currentDay);
+      // 移动到下一天
+      currentDay = currentDay.add(const Duration(days: 1));
+    }
+
+    return daysInMonth;
+  }
 }
