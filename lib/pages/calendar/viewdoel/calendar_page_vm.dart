@@ -50,6 +50,7 @@ class CalendarPageViewModel extends GetxController {
 
   /// 初始化月份信息
   void initCurrentMonthInfo(int year, int month) {
+    dayInfoDTOList.clear();
     final dayInMonth = DateUtil.dayInfoInMonth(year, month);
     final lunarInMonth = DateUtil.dayLunarInMonth(dayInMonth);
 
@@ -58,8 +59,6 @@ class CalendarPageViewModel extends GetxController {
           DayInfoDTO(dateTime: dayInMonth[i], lunar: lunarInMonth[i]);
       dayInfoDTOList.add(dayInfoDTO);
     }
-
-    debugPrint("dayInMonth > > >: $dayInMonth");
 
     firstDayOfWeek = DateUtil.firstDayOfWeek(year, month);
     monthMaxDay = DateUtil.getDaysInMonth(year, month);
