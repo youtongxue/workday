@@ -77,61 +77,63 @@ Widget dateTitleBar(BuildContext context) {
   );
 }
 
-String buildDateDay(
-    int monthFirstDayIsWeek, int monthDay, int column, int row) {
-  var dayText = "";
-  final itemIndex = (column * 7 + row + 1);
-  final result = itemIndex - monthFirstDayIsWeek;
-
-  debugPrint(
-      "monthFirstDayIsWeek: > > > $monthFirstDayIsWeek > > > itemIndex: > > > $itemIndex > > > result: > > > $result");
-
-  if (result > 0) {
-    final dayResult = result.toString();
-    if (int.parse(dayResult) <= monthDay) {
-      dayText = dayResult;
-    } else {
-      dayText = "";
-    }
-  }
-  return dayText;
-}
-
 /// 日历详情
-Widget calenderInfo(BuildContext context, int month) {
+Widget calenderInfo(
+    CalendarPageViewModel controller, BuildContext context, int month) {
   const monthMaxRow = 6; // 每月最大显示行
   const weekDay = 7; // 每周天数（列）
-  // 月份第一个月星期几
-  final firstDayOfWeek = DateUtil.firstDayOfWeek(2024, month);
-  // 某月有多少天
-  final monthDay = DateUtil.getDaysInMonth(2024, month);
   // 需要绘制多少行
   final row = DateUtil.calculateRowsForMonth(2024, month);
-  // 月份日期信息
-  final dayInMonth = DateUtil.dayInfoInMonth(2024, month);
+  debugPrint("month: $month  需要绘制行: $row");
 
-  debugPrint("month: $month  行: $row");
-
+  controller.initCurrentMonthInfo(2024, month);
   return SizedBox(
     child: Column(
       children: List.generate(row, (column) {
         return Column(
           children: [
             Row(
-              children: List.generate(weekDay, (row) {
-                return Expanded(
+              children: List.generate(
+                weekDay,
+                (row) {
+                  final dayInfoDTO =
+                      controller.oneDayDayInfoDTO(column, row, month);
+                  final dayDateTime = dayInfoDTO?.dateTime;
+                  final lunarInfo = dayInfoDTO?.lunar;
+                  return Expanded(
                     child: Container(
-                  height: ((context.height / 2) - 116) / monthMaxRow,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF1F2F5),
-                    // border: Border.all(width: 0.1),
-                  ),
-                  child: Center(
-                    child: Text(
-                        buildDateDay(firstDayOfWeek, monthDay, column, row)),
-                  ),
-                ));
-              }),
+                      height: ((context.height / 2) - 116) / monthMaxRow,
+                      decoration: BoxDecoration(
+                        color: dayDateTime == controller.currentDayDateTime
+                            ? Colors.blue
+                            : const Color(0xFFF1F2F5),
+                        // border: Border.all(width: 0.1),
+                      ),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                dayDateTime?.day.toString() ?? "",
+                                style: TextStyle(
+                                    color: dayDateTime?.weekday == 6 ||
+                                            dayDateTime?.weekday == 7
+                                        ? const Color(0xFF727376)
+                                        : Colors.black),
+                              ),
+                            ),
+                          ),
+                          // Expanded(
+                          //   child: Center(
+                          //     child: Text(lunarInfo?.lunarDay.toString() ?? ""),
+                          //   ),
+                          // ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
             const Divider(
               height: 0.4, // 分割线容器的高度，并不是线的厚度
@@ -199,10 +201,11 @@ class CalendarPage extends GetView<CalendarPageViewModel> {
                 width: context.width,
                 height: (((context.height / 2) - 116) / 6) * 7,
                 child: PageView.builder(
+                  controller: controller.calendarPagerController,
                   itemCount: 12,
                   //scrollDirection: Axis.vertical,
                   itemBuilder: (context, index) {
-                    return calenderInfo(context, index + 1);
+                    return calenderInfo(controller, context, index + 1);
                   },
                   onPageChanged: (value) {
                     controller.changeCurrentMonth(value);

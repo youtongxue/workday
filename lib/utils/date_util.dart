@@ -1,4 +1,5 @@
 import 'package:date_format/date_format.dart';
+import 'package:lunar_calendar_converter_new/lunar_solar_converter.dart';
 
 class DateUtil {
   DateUtil._();
@@ -105,5 +106,22 @@ class DateUtil {
     }
 
     return daysInMonth;
+  }
+
+  /// 获取某个DateTime的农历信息
+  static List<Lunar> dayLunarInMonth(List<DateTime> dateTimeList) {
+    List<Lunar> lunarInfoList = [];
+
+    for (var dateTime in dateTimeList) {
+      Solar solar = Solar(
+          solarYear: dateTime.year,
+          solarMonth: dateTime.month,
+          solarDay: dateTime.day);
+      Lunar lunar = LunarSolarConverter.solarToLunar(solar);
+
+      lunarInfoList.add(lunar);
+    }
+
+    return lunarInfoList;
   }
 }
