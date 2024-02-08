@@ -16,6 +16,8 @@ class CalendarPageViewModel extends GetxController {
   var offset = 0.0.obs; // 底部信息偏移量
 
   final calendarPagerController = PageController();
+  final DraggableScrollableController draggableScrollableController =
+      DraggableScrollableController();
 
   // 月份所有日，DateTime信息
   late List<DayInfoDTO> dayInfoDTOList = [];
@@ -31,10 +33,11 @@ class CalendarPageViewModel extends GetxController {
   void changeCurrentMonth(int newCurrentMonth) {
     debugPrint("newCurrentMonth > > > : $newCurrentMonth");
     currentMonth.value = newCurrentMonth + 1;
-    calculateRowForMonth();
+    _calculateRowForMonth();
+    _autoDraggableScroll();
   }
 
-  void calculateRowForMonth() {
+  void _calculateRowForMonth() {
     final row =
         DateUtil.calculateRowsForMonth(currentYear.value, currentMonth.value);
     currentRowsMonth.value = row;
@@ -92,5 +95,23 @@ class CalendarPageViewModel extends GetxController {
     super.onReady();
     // 初始化跳转到对应月份pager
     calendarPagerController.jumpToPage(currentDayDateTime.month - 1);
+  }
+
+  /// 点击今天Button回到今天
+  void scrollerToToDay() {
+    // calendarPagerController.animateToPage(currentDayDateTime.month - 1,
+    //     duration: const Duration(milliseconds: 200), curve: Curves.linear);
+    calendarPagerController.jumpToPage(currentDayDateTime.month - 1);
+  }
+
+  /// 根据月需要绘制的行，适配底部信息高度
+  void _autoDraggableScroll() {
+    draggableScrollableController.animateTo(
+        (Get.height -
+                116 -
+                (((Get.height / 2) - 116) / 6) * currentRowsMonth.value) /
+            Get.height,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.linear);
   }
 }

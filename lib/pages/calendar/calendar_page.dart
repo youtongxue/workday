@@ -3,7 +3,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:workday/components/container/custom_container.dart';
 import 'package:workday/enumm/color_enum.dart';
+import 'package:workday/pages/calendar/component/no_scrollcontroller.dart';
 import 'package:workday/pages/calendar/viewdoel/calendar_page_vm.dart';
 import 'package:workday/utils/statebar_util.dart';
 
@@ -83,21 +85,21 @@ Widget calenderInfo(
   const monthMaxRow = 6; // 每月最大显示行
   const weekDay = 7; // 每周天数（列）
   // 需要绘制多少行
-  final row = DateUtil.calculateRowsForMonth(2024, month);
-  debugPrint("month: $month  需要绘制行: $row");
+  final shouldRow = DateUtil.calculateRowsForMonth(2024, month);
+  debugPrint("month: $month  需要绘制行: $shouldRow");
 
   controller.initCurrentMonthInfo(2024, month);
   return SizedBox(
     child: Column(
-      children: List.generate(row, (column) {
+      children: List.generate(monthMaxRow, (outRowIndex) {
         return Column(
           children: [
             Row(
               children: List.generate(
                 weekDay,
-                (row) {
-                  final dayInfoDTO =
-                      controller.oneDayDayInfoDTO(column, row, month);
+                (weekColumn) {
+                  final dayInfoDTO = controller.oneDayDayInfoDTO(
+                      outRowIndex, weekColumn, month);
                   final dayDateTime = dayInfoDTO?.dateTime;
                   final lunarInfo = dayInfoDTO?.lunar;
                   return Expanded(
@@ -123,11 +125,21 @@ Widget calenderInfo(
                               ),
                             ),
                           ),
-                          // Expanded(
-                          //   child: Center(
-                          //     child: Text(lunarInfo?.lunarDay.toString() ?? ""),
-                          //   ),
-                          // ),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                null == lunarInfo
+                                    ? ""
+                                    : DateUtil.getLunarDay(lunarInfo),
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: dayDateTime?.weekday == 6 ||
+                                            dayDateTime?.weekday == 7
+                                        ? const Color(0xFF727376)
+                                        : Colors.black),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -135,13 +147,14 @@ Widget calenderInfo(
                 },
               ),
             ),
-            const Divider(
-              height: 0.4, // 分割线容器的高度，并不是线的厚度
-              thickness: 0.4, // 线的厚度
-              color: Color(0xFFD2D3D6),
-              indent: 10,
-              endIndent: 10,
-            ),
+            if (outRowIndex < shouldRow - 1)
+              const Divider(
+                height: 0.4, // 分割线容器的高度，并不是线的厚度
+                thickness: 0.4, // 线的厚度
+                color: Color(0xFFD2D3D6),
+                indent: 10,
+                endIndent: 10,
+              ),
           ],
         );
       }),
@@ -156,21 +169,26 @@ Widget workDayInfo(BuildContext context) {
     child: Column(
       children: [
         const SizedBox(height: 16),
-        Container(
-          width: context.width,
-          height: 80,
-          decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(12)),
-          child: const Row(
-            children: [
-              SizedBox(width: 12),
-              Text(
-                "出勤 : ",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
+        GestureDetector(
+          onTap: () {
+            debugPrint("tap > > > SizedBox");
+          },
+          child: Container(
+            width: context.width,
+            height: 80,
+            decoration: BoxDecoration(
+                color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            child: const Row(
+              children: [
+                SizedBox(width: 12),
+                Text(
+                  "出勤 : ",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
           ),
-        )
+        ),
       ],
     ),
   );
@@ -199,7 +217,7 @@ class CalendarPage extends GetView<CalendarPageViewModel> {
               top: 116,
               child: SizedBox(
                 width: context.width,
-                height: (((context.height / 2) - 116) / 6) * 7,
+                height: (((context.height / 2) - 116) / 6) * 6 + 2,
                 child: PageView.builder(
                   controller: controller.calendarPagerController,
                   itemCount: 12,
@@ -229,24 +247,64 @@ class CalendarPage extends GetView<CalendarPageViewModel> {
               maxChildSize:
                   (context.height - 116 - (((context.height / 2) - 116) / 6)) /
                       context.height, // 底部面板可以拖拽到的最大高度比例
+              controller: controller.draggableScrollableController,
               builder:
                   (BuildContext context, ScrollController scrollController) {
-                return Container(
-                  clipBehavior: Clip.hardEdge,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF9F9FB),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(0),
-                      topRight: Radius.circular(0),
+                return Column(
+                  children: [
+                    const Divider(
+                      height: 0.4, // 分割线容器的高度，并不是线的厚度
+                      thickness: 0.4, // 线的厚度
+                      color: Color(0xFFD2D3D6),
                     ),
-                  ),
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    physics: const PageScrollPhysics(),
-                    child: workDayInfo(context),
-                  ),
+                    Expanded(
+                      child: Container(
+                        clipBehavior: Clip.hardEdge,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF9F9FB),
+                        ),
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          child: workDayInfo(context),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
+            ),
+
+            Positioned(
+              right: 32,
+              bottom: 32,
+              child: CustomContainer(
+                duration: const Duration(milliseconds: 200),
+                scaleValue: 0.9,
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(30),
+                onTap: () {
+                  controller.scrollerToToDay();
+                },
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      "今",
+                      style: TextStyle(
+                        color: Colors.white,
+                        //fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
