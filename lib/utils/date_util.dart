@@ -175,6 +175,17 @@ class DateUtil {
     return lunarInfoList;
   }
 
+  /// 获取某个DateTime的农历信息
+  static Lunar dayLunar(DateTime dateTime) {
+    Solar solar = Solar(
+        solarYear: dateTime.year,
+        solarMonth: dateTime.month,
+        solarDay: dateTime.day);
+    Lunar lunar = LunarSolarConverter.solarToLunar(solar);
+
+    return lunar;
+  }
+
   /// 获取农历天信息
   static String getLunarDay(Lunar lunar) {
     return _lunarDay[lunar.lunarDay! - 1];
@@ -183,5 +194,12 @@ class DateUtil {
   /// 获取农历天信息
   static String getLunarMonth(Lunar lunar) {
     return _lunarMonth[lunar.lunarMonth! - 1];
+  }
+
+  /// 今天
+  static DateTime todayDateTime() {
+    final now = DateTime.now();
+
+    return DateTime(now.year, now.month, now.day);
   }
 }

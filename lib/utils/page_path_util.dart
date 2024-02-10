@@ -1,9 +1,9 @@
 class PagePathUtil {
   PagePathUtil._();
 
-  // 定义页面别名
+  // 导航页
   static const bottomNavPage = '/';
 
-  // 课表相关
+  // 出勤
   static const calendaerPage = '/timeTableSettingPage';
 }

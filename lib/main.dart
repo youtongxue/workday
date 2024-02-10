@@ -21,8 +21,8 @@ class WejindaApp extends StatelessWidget {
       // navigatorKey: Toast.navigatorKey, //加上此配置
       //navigatorObservers: [FlutterSmartDialog.observer],
       // Dialog 初始化
-      builder: FlutterSmartDialog.init(), 
-      initialRoute: PagePathUtil.calendaerPage,
+      builder: FlutterSmartDialog.init(),
+      initialRoute: PagePathUtil.bottomNavPage,
       getPages: AppRountes.appRoutes,
       defaultTransition: Transition.native, // 页面跳转默认动画
       //routingCallback: RoutingListener.routingListner,

@@ -2,18 +2,26 @@ import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:workday/pages/calendar/enumm/attendance_enum.dart';
 
 import '../../../utils/date_util.dart';
 import '../dto/dayinfo.dart';
 
 class CalendarPageViewModel extends GetxController {
-  var currentDayDateTime =
+  final todayDateTime =
       DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  var currentDayDateTime =
+      DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day)
+          .obs;
   var currentYear = 2024.obs;
   var currentMonth = 1.obs;
   var calendarInfoHeight = 200.obs;
   var currentRowsMonth = 6.obs; // 选中月需要绘制多少行
   var offset = 0.0.obs; // 底部信息偏移量
+
+  var dayCheckBox = false.obs;
+  var morningCheckBox = false.obs;
+  var afternoonCheckBox = false.obs;
 
   final calendarPagerController = PageController();
   final DraggableScrollableController draggableScrollableController =
@@ -94,23 +102,30 @@ class CalendarPageViewModel extends GetxController {
   void onReady() {
     super.onReady();
     // 初始化跳转到对应月份pager
-    calendarPagerController.jumpToPage(currentDayDateTime.month - 1);
+    calendarPagerController.jumpToPage(currentDayDateTime.value.month - 1);
   }
 
   /// 点击今天Button回到今天
   void scrollerToToDay() {
     // calendarPagerController.animateToPage(currentDayDateTime.month - 1,
     //     duration: const Duration(milliseconds: 200), curve: Curves.linear);
-    calendarPagerController.jumpToPage(currentDayDateTime.month - 1);
+    calendarPagerController.jumpToPage(todayDateTime.month - 1);
+    currentDayDateTime.value = todayDateTime;
   }
 
   /// 根据月需要绘制的行，适配底部信息高度
   void _autoDraggableScroll() {
+    final screenHeight = Get.height;
+    const titleBar = 116;
+    final line = 0.4 * (currentRowsMonth.value - 1);
+
     draggableScrollableController.animateTo(
-        (Get.height -
-                116 -
-                (((Get.height / 2) - 116) / 6) * currentRowsMonth.value) /
-            Get.height,
+        (screenHeight -
+                titleBar -
+                line -
+                (((screenHeight / 2) - titleBar) / 6) *
+                    currentRowsMonth.value) /
+            screenHeight,
         duration: const Duration(milliseconds: 200),
         curve: Curves.linear);
   }
