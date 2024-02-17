@@ -12,6 +12,8 @@ class AssertUtil {
 
   static const String iconBack = "images/icon_back.svg";
   static const String iconGo = "images/icon_go.svg";
+  static const String iconCourse = "images/icon_course.svg";
+  static const String iconMy = "images/icon_my.svg";
 
   // jpeg
 

@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import '../pages/calendar/dto/dayinfo_db.dart';
+
 class InitService {
   static Future<void> init() async {
     debugPrint('< < <   全局初始化 start...   > > >');
@@ -17,5 +19,10 @@ class InitService {
     // 初始化本地时间服务
     initializeDateFormatting(); // 初始化日期格式化信息
     debugPrint("初始化日期格式化信息 完成✅");
+
+    // 初始化数据库
+    await DayInfoProvider.instance.open();
+    final db = DayInfoProvider.instance.db;
+
   }
 }

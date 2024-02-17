@@ -15,6 +15,7 @@ class CustomDatePicekr extends StatelessWidget {
   final int startYear; // 起始年
   final int endYear; // 截止年
   final bool selectNowDate; // 是否选中当前日期
+  final bool onlySelectYear; // 是否选中当前日期
   final DateTime? defaultSelectDateTime; // 选中的日期
   final VoidCallback? cancel; // 取消回调函数
   final EnterCallback? enter; // 确认回调函数
@@ -25,6 +26,7 @@ class CustomDatePicekr extends StatelessWidget {
       required this.startYear,
       required this.endYear,
       this.selectNowDate = false,
+      this.onlySelectYear = false,
       this.defaultSelectDateTime,
       this.cancel,
       this.enter});
@@ -36,6 +38,7 @@ class CustomDatePicekr extends StatelessWidget {
           startYear: startYear,
           endYear: endYear,
           selectNowDate: selectNowDate,
+          onlySelectYear: onlySelectYear,
           defaultSelectDateTime: defaultSelectDateTime),
       builder: (controller) {
         return Container(
@@ -103,74 +106,81 @@ class CustomDatePicekr extends StatelessWidget {
                       ),
                     ),
 
-                    // 月份 滚动Item
-                    Expanded(
-                      child: CupertinoPicker(
-                        magnification: 1.1,
-                        squeeze: 0.9,
-                        useMagnifier: true,
-                        itemExtent: 26,
-                        // This is called when selected item is changed.
-                        onSelectedItemChanged: (int selectedItem) {
-                          controller.scrollMonth(selectedItem);
-                        },
-                        scrollController: controller.monthScrollerController,
-                        selectionOverlay: Container(
-                          height: 26,
-                          color: Colors.transparent,
-                        ),
-                        children: List<Widget>.generate(
-                            controller.showMonthList.length, (int index) {
-                          return Center(
-                            child: Text(
-                              controller.showMonthList[index].toString(),
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: controller.selectedMonth ==
-                                        controller.showMonthList[index]
-                                    ? MyColors.textMain.color
-                                    : MyColors.textSecond.color,
+                    controller.onlySelectYear
+                        ? const SizedBox()
+                        :
+                        // 月份 滚动Item
+                        Expanded(
+                            child: CupertinoPicker(
+                              magnification: 1.1,
+                              squeeze: 0.9,
+                              useMagnifier: true,
+                              itemExtent: 26,
+                              // This is called when selected item is changed.
+                              onSelectedItemChanged: (int selectedItem) {
+                                controller.scrollMonth(selectedItem);
+                              },
+                              scrollController:
+                                  controller.monthScrollerController,
+                              selectionOverlay: Container(
+                                height: 26,
+                                color: Colors.transparent,
                               ),
+                              children: List<Widget>.generate(
+                                  controller.showMonthList.length, (int index) {
+                                return Center(
+                                  child: Text(
+                                    controller.showMonthList[index].toString(),
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      color: controller.selectedMonth ==
+                                              controller.showMonthList[index]
+                                          ? MyColors.textMain.color
+                                          : MyColors.textSecond.color,
+                                    ),
+                                  ),
+                                );
+                              }),
                             ),
-                          );
-                        }),
-                      ),
-                    ),
+                          ),
 
                     // 日 滚动Item
-                    Expanded(
-                      child: CupertinoPicker(
-                        magnification: 1.1,
-                        squeeze: 0.9,
-                        useMagnifier: true,
-                        itemExtent: 26,
-                        onSelectedItemChanged: (int selectedItem) {
-                          controller.scrollDay(selectedItem);
-                        },
-                        scrollController: controller.dayScrollerController,
-                        selectionOverlay: Container(
-                          height: 26,
-                          color: Colors.transparent,
-                        ),
-                        children: List<Widget>.generate(
-                          controller.showDaysList.length,
-                          (int index) {
-                            return Center(
-                              child: Text(
-                                controller.showDaysList[index].toString(),
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: controller.selectDay ==
-                                          controller.showDaysList[index]
-                                      ? MyColors.textMain.color
-                                      : MyColors.textSecond.color,
-                                ),
+                    controller.onlySelectYear
+                        ? const SizedBox()
+                        : Expanded(
+                            child: CupertinoPicker(
+                              magnification: 1.1,
+                              squeeze: 0.9,
+                              useMagnifier: true,
+                              itemExtent: 26,
+                              onSelectedItemChanged: (int selectedItem) {
+                                controller.scrollDay(selectedItem);
+                              },
+                              scrollController:
+                                  controller.dayScrollerController,
+                              selectionOverlay: Container(
+                                height: 26,
+                                color: Colors.transparent,
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
+                              children: List<Widget>.generate(
+                                controller.showDaysList.length,
+                                (int index) {
+                                  return Center(
+                                    child: Text(
+                                      controller.showDaysList[index].toString(),
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        color: controller.selectDay ==
+                                                controller.showDaysList[index]
+                                            ? MyColors.textMain.color
+                                            : MyColors.textSecond.color,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
                   ],
                 ),
               ),
@@ -230,10 +240,13 @@ class CustomDatePicekr extends StatelessWidget {
                           onTap: () {
                             debugPrint("点击 确定 按钮...");
                             if (null != enter) {
-                              enter!(DateTime(
-                                  controller.selectedYear,
-                                  controller.selectedMonth,
-                                  controller.selectDay));
+                              controller.onlySelectYear
+                                  ? enter!(
+                                      DateTime(controller.selectedYear, 1, 1))
+                                  : enter!(DateTime(
+                                      controller.selectedYear,
+                                      controller.selectedMonth,
+                                      controller.selectDay));
                             }
 
                             Navigator.pop(context);
@@ -256,6 +269,7 @@ class DatePickerController extends GetxController {
   final int startYear; // 起始年
   final int endYear; // 截止年
   final bool selectNowDate; // 是否选中当前日期
+  final bool onlySelectYear;
   final DateTime? defaultSelectDateTime; // 选中的日期
 
   late int selectedYear; // 当前选择的年
@@ -273,6 +287,7 @@ class DatePickerController extends GetxController {
     required this.startYear,
     required this.endYear,
     this.selectNowDate = false,
+    this.onlySelectYear = false,
     this.defaultSelectDateTime,
   }) {
     // 初始化时间
@@ -298,7 +313,7 @@ class DatePickerController extends GetxController {
         "selectNowDate > > > $selectNowDate, year:$selectedYear, m:$selectedMonth, day:$selectDay");
 
     showYearList =
-        DateUtil.getBetweenYear(startYear: selectedYear, endYear: endYear);
+        DateUtil.getBetweenYear(startYear: startYear, endYear: endYear);
     showMonthList = DateUtil.getAllMonthList();
     showDaysList = DateUtil.getYMdays(year: selectedYear, month: selectedMonth);
   }

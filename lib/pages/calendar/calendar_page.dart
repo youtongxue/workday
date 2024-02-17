@@ -1,3 +1,4 @@
+import 'package:date_format/date_format.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:workday/components/container/custom_container.dart';
@@ -6,6 +7,8 @@ import 'package:workday/pages/calendar/viewdoel/calendar_page_vm.dart';
 import 'package:workday/utils/statebar_util.dart';
 
 import '../../components/container/custom_icon_button.dart';
+import '../../components/input/custom_date_picker.dart';
+import '../../components/view/custom_bottom_sheet.dart';
 import '../../enumm/nav_enum.dart';
 import '../../utils/assert_util.dart';
 import '../../utils/date_util.dart';
@@ -31,20 +34,41 @@ Widget dateTitleBar(BuildContext context) {
             child: Row(
               children: [
                 const SizedBox(width: 16),
-                Obx(
-                  () => Text(
-                    "2024年${controller.currentMonth}月",
-                    style: const TextStyle(fontSize: 18),
+                GestureDetector(
+                  onTap: () {
+                    // showMyBottomSheet(
+                    //   context,
+                    //   showChild: CustomDatePicekr(
+                    //     title: "选择日期",
+                    //     selectNowDate: true,
+                    //     onlySelectYear: true,
+                    //     defaultSelectDateTime: controller.todayDateTime,
+                    //     startYear: int.parse(formatDate(
+                    //         DateTime(DateTime.now().year - 1, 1, 1), [yyyy])),
+                    //     endYear: int.parse(formatDate(
+                    //         DateTime(DateTime.now().year + 1, 1, 1), [yyyy])),
+                    //     enter: (selectTime) async {
+                    //       debugPrint("选择时间: $selectTime");
+                    //       await controller.refreshData(selectTime);
+                    //     },
+                    //   ),
+                    // );
+                  },
+                  child: Obx(
+                    () => Text(
+                      "${controller.currentYear.value}年${controller.currentMonth}月",
+                      style: const TextStyle(fontSize: 18),
+                    ),
                   ),
                 ),
                 const Expanded(child: SizedBox()),
-                CustomIconButton(
-                  AssertUtil.menuSvg,
-                  padding: const EdgeInsets.all(16),
-                  iconSize: 20,
-                  alignment: Alignment.centerRight,
-                  onTap: () {},
-                ),
+                // CustomIconButton(
+                //   AssertUtil.menuSvg,
+                //   padding: const EdgeInsets.all(16),
+                //   iconSize: 20,
+                //   alignment: Alignment.centerRight,
+                //   onTap: () {},
+                // ),
               ],
             ),
           ),
@@ -92,61 +116,56 @@ Color _dayTextColor(DateTime? nowDateTime, CalendarPageViewModel controller,
   }
 }
 
+Color _attendanceTextColor(
+    DateTime? nowDateTime,
+    CalendarPageViewModel controller,
+    DateTime? currentDayDateTime,
+    String text) {
+  if (null == nowDateTime) return Colors.transparent;
+
+  if (text.isNotEmpty && text == '未选择') {
+    return Colors.transparent;
+  } else if (nowDateTime == currentDayDateTime) {
+    return Colors.white;
+  } else if (nowDateTime == controller.todayDateTime) {
+    return Colors.red;
+  }
+
+  return Colors.black;
+}
+
 /// 出勤信息
-Widget _attendance(CalendarPageViewModel controller, DayInfoDTO? dayInfoDTO) {
+String _attendance(Rx<DayInfoDTO>? dayInfoDTO) {
+  String result = '未选择';
   // 不存在的日期Item
   if (null == dayInfoDTO) {
-    return const Text(
-      '未选择',
-      style: TextStyle(
-        fontSize: 9,
-        //color: Colors.amber,
-        color: Colors.transparent,
-      ),
-    );
+    result = '未选择';
+    return result;
   }
 
   // 在今天之后
-  if (dayInfoDTO.dateTime.isAfter(DateUtil.todayDateTime())) {
-    return const Text(
-      '未选择',
-      style: TextStyle(
-        fontSize: 9,
-        //color: Colors.grey,
-        color: Colors.transparent,
-      ),
-    );
+  if (dayInfoDTO.value.dateTime.isAfter(DateUtil.todayDateTime())) {
+    result = '未选择';
+    return result;
   }
 
   // 未选择出勤
-  if (dayInfoDTO.attendance == AttendanceEnum.unselect.attendance) {
-    return const Text(
-      '未选择',
-      style: TextStyle(
-        fontSize: 9,
-        //color: Colors.red,
-        color: Colors.transparent,
-      ),
-    );
+  if (dayInfoDTO.value.attendance == AttendanceEnum.unselect.attendance) {
+    result = '未选择';
+    return result;
   }
 
-  String result = '';
-  if (dayInfoDTO.attendance == 0) {
+  if (dayInfoDTO.value.attendance == 0) {
     result = '未选择';
-  } else if (dayInfoDTO.attendance == 1) {
+  } else if (dayInfoDTO.value.attendance == 1) {
     result = '全天';
-  } else if (dayInfoDTO.attendance == 2) {
+  } else if (dayInfoDTO.value.attendance == 2) {
     result = '上午';
-  } else if (dayInfoDTO.attendance == 3) {
+  } else if (dayInfoDTO.value.attendance == 3) {
     result = '下午';
   }
 
-  return Text(
-    result,
-    style: const TextStyle(
-      fontSize: 9,
-    ),
-  );
+  return result;
 }
 
 /// 日历详情
@@ -155,10 +174,11 @@ Widget calenderInfo(
   const monthMaxRow = 6; // 每月最大显示行
   const weekDay = 7; // 每周天数（列）
   // 需要绘制多少行
-  final shouldRow = DateUtil.calculateRowsForMonth(2024, month);
+  final shouldRow =
+      DateUtil.calculateRowsForMonth(controller.currentYear.value, month);
   debugPrint("month: $month  需要绘制行: $shouldRow");
 
-  controller.initCurrentMonthInfo(2024, month);
+  controller.initCurrentMonthInfo(controller.currentYear.value, month);
   return SizedBox(
     child: Column(
       children: List.generate(monthMaxRow, (outRowIndex) {
@@ -170,17 +190,20 @@ Widget calenderInfo(
                 (weekColumn) {
                   final dayInfoDTO = controller.oneDayDayInfoDTO(
                       outRowIndex, weekColumn, month);
-                  final dayDateTime = dayInfoDTO?.dateTime;
-                  final lunarInfo = dayInfoDTO?.lunar;
-                  final attendance = dayInfoDTO?.attendance;
+                  final dayDateTime = dayInfoDTO?.value.dateTime;
+                  final lunarInfo = dayInfoDTO?.value.lunar;
+                  final attendance = dayInfoDTO?.value.attendance;
+
+                  // debugPrint(
+                  //     'dayDateTime$dayDateTime, lunarInfo$lunarInfo, attendance$attendance');
                   return Expanded(
                     child: GestureDetector(
                       onTap: () {
                         if (null != dayDateTime) {
-                          controller.currentDayDateTime.value = dayDateTime;
+                          controller.clickOneDay(dayDateTime);
                         }
                       },
-                      child: SizedBox(
+                      child: Container(
                         width: ((context.height / 2) - 116) / monthMaxRow,
                         height: ((context.height / 2) - 116) / monthMaxRow,
                         //color: Colors.amber,
@@ -230,7 +253,26 @@ Widget calenderInfo(
                                       ),
                                     ),
 
-                                    _attendance(controller, dayInfoDTO),
+                                    null == dayInfoDTO
+                                        ? const SizedBox()
+                                        : Obx(() {
+                                            var text = _attendance(dayInfoDTO);
+                                            return Text(
+                                              text,
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                color: _attendanceTextColor(
+                                                  dayDateTime,
+                                                  controller,
+                                                  controller
+                                                      .currentDayDateTime.value,
+                                                  text,
+                                                ),
+                                              ),
+                                            );
+                                          }),
+
+                                    //Obx(() => _attendance(dayInfoDTO.value)),
 
                                     // 农历信息
                                     // Expanded(
@@ -262,8 +304,10 @@ Widget calenderInfo(
             ),
             if (outRowIndex < shouldRow - 1)
               const Divider(
-                height: 0.4, // 分割线容器的高度，并不是线的厚度
-                thickness: 0.4, // 线的厚度
+                height: 0.4,
+                // 分割线容器的高度，并不是线的厚度
+                thickness: 0.4,
+                // 线的厚度
                 color: Color(0xFFD2D3D6),
                 indent: 10,
                 endIndent: 10,
@@ -321,6 +365,7 @@ Widget workDayInfo(BuildContext context, CalendarPageViewModel controller) {
                   ),
                 )
               : const SizedBox(),
+          // 未来时间不能打卡
           (controller.currentDayDateTime.value
                       .compareTo(DateUtil.todayDateTime()) <=
                   0)
@@ -344,10 +389,9 @@ Widget workDayInfo(BuildContext context, CalendarPageViewModel controller) {
                                 ),
                                 Checkbox(
                                   value: controller.dayCheckBox.value,
-                                  onChanged: (value) {
-                                    controller.dayCheckBox.value = value!;
-                                    controller.morningCheckBox.value = false;
-                                    controller.afternoonCheckBox.value = false;
+                                  onChanged: (value) async {
+                                    await controller.selectAttendance(
+                                        AttendanceEnum.allDay, value);
                                   },
                                   activeColor: Colors.blue,
                                   checkColor: Colors.white,
@@ -369,10 +413,9 @@ Widget workDayInfo(BuildContext context, CalendarPageViewModel controller) {
                                 ),
                                 Checkbox(
                                   value: controller.morningCheckBox.value,
-                                  onChanged: (value) {
-                                    controller.dayCheckBox.value = false;
-                                    controller.morningCheckBox.value = value!;
-                                    controller.afternoonCheckBox.value = false;
+                                  onChanged: (value) async {
+                                    await controller.selectAttendance(
+                                        AttendanceEnum.morning, value);
                                   },
                                   activeColor: Colors.blue,
                                   checkColor: Colors.white,
@@ -394,10 +437,9 @@ Widget workDayInfo(BuildContext context, CalendarPageViewModel controller) {
                                 ),
                                 Checkbox(
                                   value: controller.afternoonCheckBox.value,
-                                  onChanged: (value) {
-                                    controller.dayCheckBox.value = false;
-                                    controller.morningCheckBox.value = false;
-                                    controller.afternoonCheckBox.value = value!;
+                                  onChanged: (value) async {
+                                    await controller.selectAttendance(
+                                        AttendanceEnum.afternoon, value);
                                   },
                                   activeColor: Colors.blue,
                                   checkColor: Colors.white,
@@ -453,12 +495,11 @@ class CalendarPage extends GetView<CalendarPageViewModel> {
                 child: PageView.builder(
                   controller: controller.calendarPagerController,
                   itemCount: 12,
-                  //scrollDirection: Axis.vertical,
                   itemBuilder: (context, index) {
                     return calenderInfo(controller, context, index + 1);
                   },
-                  onPageChanged: (value) {
-                    controller.changeCurrentMonth(value);
+                  onPageChanged: (value) async {
+                    await controller.changeCurrentMonth(value);
                   },
                 ),
               ),
@@ -473,16 +514,19 @@ class CalendarPage extends GetView<CalendarPageViewModel> {
             // 底部考勤
             Obx(
               () => DraggableScrollableSheet(
-                initialChildSize: 0.5, // 初始时，底部面板占据整个屏幕高度的比例
+                initialChildSize: 0.5,
+                // 初始时，底部面板占据整个屏幕高度的比例
                 minChildSize: (context.height -
                         116 -
                         (((context.height / 2) - 116)) -
                         (0.4 * (controller.currentRowsMonth.value - 1))) /
-                    context.height, // 底部面板可以拖拽到的最小高度比例
+                    context.height,
+                // 底部面板可以拖拽到的最小高度比例
                 maxChildSize: (context.height -
                         116 -
                         (((context.height / 2) - 116) / 6)) /
-                    context.height, // 底部面板可以拖拽到的最大高度比例
+                    context.height,
+                // 底部面板可以拖拽到的最大高度比例
                 controller: controller.draggableScrollableController,
                 builder:
                     (BuildContext context, ScrollController scrollController) {

@@ -52,6 +52,47 @@ class DateUtil {
     '三十'
   ];
 
+  static const List<String> tianGan = [
+    '甲',
+    '乙',
+    '丙',
+    '丁',
+    '戊',
+    '己',
+    '庚',
+    '辛',
+    '壬',
+    '癸'
+  ];
+  static const List<String> diZhi = [
+    '子',
+    '丑',
+    '寅',
+    '卯',
+    '辰',
+    '巳',
+    '午',
+    '未',
+    '申',
+    '酉',
+    '戌',
+    '亥'
+  ];
+  static const List<String> shengXiao = [
+    '鼠',
+    '牛',
+    '虎',
+    '兔',
+    '龙',
+    '蛇',
+    '马',
+    '羊',
+    '猴',
+    '鸡',
+    '狗',
+    '猪'
+  ];
+
   DateUtil._();
 
   // 计算两个年份之间的所有年份值
@@ -201,5 +242,91 @@ class DateUtil {
     final now = DateTime.now();
 
     return DateTime(now.year, now.month, now.day);
+  }
+
+  /// 生成ID 2024211
+  static String generationDayId(DateTime dateTime) {
+    String year = '${dateTime.year}';
+    String month = '${dateTime.month}'.padLeft(2, '0');
+    String day = '${dateTime.day}'.padLeft(2, '0');
+
+    return '$year$month$day';
+  }
+
+  /// 生成 202401
+  static String generationYearMonth(DateTime dateTime) {
+    String year = '${dateTime.year}';
+    String month = '${dateTime.month}'.padLeft(2, '0');
+
+    return '$year$month';
+  }
+
+  /// 计算某一年有多少天
+  static int daysInYear(int year) {
+    if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) {
+      // 闰年有366天
+      return 366;
+    } else {
+      // 平年有365天
+      return 365;
+    }
+  }
+
+  /// 获取某年的第一天的DateTime对象
+  static DateTime firstDayOfYear(int year) {
+    return DateTime(year, 1, 1);
+  }
+
+  /// 获取某年，每个月第一天的DateTime
+  static List<DateTime> getFirstDaysOfMonthsInYear(int year) {
+    List<DateTime> firstDays = [];
+    for (int month = 1; month <= 12; month++) {
+      firstDays.add(DateTime(year, month, 1));
+    }
+    return firstDays;
+  }
+
+  /// 获取中国传统的干支纪年体系
+  static String getGanZhiYear(int year) {
+    // 干支纪年从公元前2697年开始，即黄帝元年为甲子年
+    // 由于是循环的，可以通过取模来计算
+    int ganIndex = (year - 4) % 10; // 天干是十年一个循环
+    int zhiIndex = (year - 4) % 12; // 地支是十二年一个循环
+
+    // 获取对应的天干、地支
+    String gan = tianGan[ganIndex];
+    String zhi = diZhi[zhiIndex];
+
+    // 获取对应的生肖
+    String xiao = shengXiao[zhiIndex];
+
+    // 拼接结果
+    return '$gan$zhi$xiao年';
+  }
+
+  /// 闰年
+  static bool isRunYear(int year) {
+    if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) {
+      // 闰年有366天
+      return true;
+    } else {
+      // 平年有365天
+      return false;
+    }
+  }
+
+  /// 加减一年
+  static DateTime addOrSubtractYear(DateTime date, int years) {
+    int newYear = date.year + years;
+    int newMonth = date.month;
+    int newDay = date.day;
+
+    // 检查是否是2月29日且目标年份不是闰年
+    if (newMonth == 2 && newDay == 29 && !isRunYear(date.year)) {
+      // 将日期调整为2月28日
+      newDay = 28;
+    }
+
+    return DateTime(newYear, newMonth, newDay);
   }
 }
